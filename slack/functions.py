@@ -25,49 +25,54 @@ def scrape(name, col_name):
 
 
 # --------- New member -----------
-def greet_new_user(userid: str, username: str, slack_client):
-    dm_ch = slack_client.api_call('im.open', params={'user': userid})['channel']['id']
+def greet_new_user(userid: str, username: str, slack_client) -> dict:
+    dm_ch = slack_client.api_call('im.open', params={'user': userid}).get('channel', {}).get('id')
 
     greet_text = "Welcome <@{}>!\n" \
-                 "Please take a moment and read this introduction to the system and how it works.\n" \
-                 "First of all please type '!membersheet' (w/o quotes) in the chat and access the link I'll give you. "\
-                 "You'll find a spreadsheet where you're supposed to enter your information.\n" \
-                 "Check out the channels on the left. We have quite a few of them (40+). What you can see right now " \
-                 "are all public channels so feel free to join any of them! We have #general and #offtopic to " \
-                 "socialize, while other channels serve different purposes. Most CHs are for either language-specific "\
-                 "questions, or for projects.\n" \
+                 "Please take a moment and read this short introduction\n" \
+                 "The channel list is available on the left. Right now you can only see the ones you've joined, " \
+                 "but we also have about 60 other. Click on the 'Channels' title (http://i.imgur.com/o3hkfyU.png) to " \
+                 "view them all.\n" \
+                 "<#announcements> is used by the admins to inform you about important stuff. Be sure to check it " \
+                 "out if you see a new message there!\n" \
+                 "<#admin_help> is our meta channel. You can suggest or ask about anything that is related to the " \
+                 "community.\n" \
+                 "<#programming> is used for general programming related discussion. If you have a language-specific " \
+                 "question/topic please use the language's channel (if it exists).\n " \
+                 "Also I'd like to ask you to type '!membersheet' (without quotes) in the chat, and fill the sheet " \
+                 "I'll link you. The '!help' command is also available to find out more about my functions.\n" \
                  "Enjoy your stay! :simple_smile:" \
         .format(username)
     return {'channel': dm_ch, 'text': greet_text}
 
 
-def notify_mods(username: str):
+def notify_mods(username: str) -> dict:
     return {'channel': consts.CH_NEW_USER_FEEDBACK, 'text': '{} joined the team'.format(username)}
 
 
 # -------- Custom functions, append FUNCTION_LIST dict at the bottom --------
-def help_(ch: str, **_):
+def help_(ch: str, **_) -> dict:
     text = ''.join('{:<40}{}\n'.format(key, val[1]) for key, val in FUNCTION_LIST.items())
     return {'text': 'Currently available commands:\n```{}```'.format(text),
             'channel': ch}
 
 
-def project_list(ch: str, **_):
+def project_list(ch: str, **_) -> dict:
     return {'text': 'Currently ongoing projects: {}'.format('http://bit.ly/1PVR3Uy'),
             'channel': ch}
 
 
-def new_project(ch: str, **_):
+def new_project(ch: str, **_) -> dict:
     return {'text': 'To start a new project first please fill this form: {}'.format('http://bit.ly/1HQSQYm'),
             'channel': ch}
 
 
-def membersheet(ch: str, **_):
+def membersheet(ch: str, **_) -> dict:
     return {'text': 'Our member spreadsheet: {}. Please upload your info! Thanks!'.format('http://bit.ly/1R5tvN3'),
             'channel': ch}
 
 
-def scrape_db(ch: str, msg: str, sender_id: str, slack_client, **_):
+def scrape_db(ch: str, msg: str, sender_id: str, slack_client, **_) -> dict:
     msg = msg.split(' ')
     if len(msg) == 1:
         text = scrape(slack_client.USERS.get(sender_id, ''), msg[0])
@@ -80,7 +85,7 @@ def scrape_db(ch: str, msg: str, sender_id: str, slack_client, **_):
     return {'text': text, 'channel': ch}
 
 
-def admin(ch: str, **_):
+def admin(ch: str, **_) -> dict:
     if ch == consts.CH_GENERAL:
         return {'text': '<@joesv> <@micheal> <@daruso> <@therightman>',
                 'channel': ch}
@@ -88,7 +93,7 @@ def admin(ch: str, **_):
         return {'text': '', 'channel': ch}
 
 
-def suggest(msg: str, **_):
+def suggest(msg: str, **_) -> dict:
     return {'text': msg, 'channel': consts.CH_DM_ME}
 
 FUNCTION_LIST = {
