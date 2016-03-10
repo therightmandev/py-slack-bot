@@ -33,16 +33,16 @@ def greet_new_user(userid: str, username: str, slack_client) -> dict:
                  "The channel list is available on the left. Right now you can only see the ones you've joined, " \
                  "but we also have about 60 other. Click on the 'Channels' title (http://i.imgur.com/o3hkfyU.png) to " \
                  "view them all.\n" \
-                 "<#announcements> is used by the admins to inform you about important stuff. Be sure to check it " \
+                 "<#{}> is used by the admins to inform you about important stuff. Be sure to check it " \
                  "out if you see a new message there!\n" \
-                 "<#admin_help> is our meta channel. You can suggest or ask about anything that is related to the " \
+                 "<#{}> is our meta channel. You can suggest or ask about anything that is related to the " \
                  "community.\n" \
-                 "<#programming> is used for general programming related discussion. If you have a language-specific " \
+                 "<#{}> is used for general programming related discussion. If you have a language-specific " \
                  "question/topic please use the language's channel (if it exists).\n " \
                  "Also I'd like to ask you to type '!membersheet' (without quotes) in the chat, and fill the sheet " \
                  "I'll link you. The '!help' command is also available to find out more about my functions.\n" \
                  "Enjoy your stay! :simple_smile:" \
-        .format(username)
+        .format(username, consts.CH_ANNOUNCEMENTS, consts.CH_ADMIN_HELP, consts.CH_PROGRAMMING)
     return {'channel': dm_ch, 'text': greet_text}
 
 
