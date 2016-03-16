@@ -2,6 +2,7 @@ import json
 import time
 import asyncio
 import uuid
+from urllib.parse import urlencode
 
 import requests
 import websockets
@@ -72,8 +73,8 @@ class SlackClient(object):
         self.PENDING_MSGS[int_id] = body
         await asyncio.sleep(5)
 
-        popped = self.PENDING_MSGS.pop(int_id, None)
-        if popped is not None:
+        popped = self.PENDING_MSGS.pop(int_id, {})
+        if popped != {}:
             await self.send_msg(popped, int_id)
 
     async def ping(self):
@@ -97,6 +98,11 @@ class SlackClient(object):
         body['id'] = int_id
         body['type'] = 'message'
         body['token'] = self.token
+
+        if body.get('as_user') == 'true':
+            reply = urlencode(body)
+            requests.get("https://slack.com/api/chat.postMessage?" + reply)
+            return
 
         reply = json.dumps(body)
 

@@ -96,6 +96,15 @@ def admin(ch: str, **_) -> dict:
 def suggest(msg: str, **_) -> dict:
     return {'text': msg, 'channel': consts.CH_DM_ME}
 
+
+def resources(ch: str, **_):
+    if ch == consts.CH_HASKELL:
+        return {'text': '<http://learnyouahaskell.com/chapters|Learn You A Haskell>\n\n'
+                        '<http://www.seas.upenn.edu/~cis194/lectures.html|CIS194>',
+                'channel': ch,
+                'as_user': 'true'}
+    return ''
+
 FUNCTION_LIST = {
     '!help': (help_, ''),
     '!projectlist': (project_list, 'if you want to join an existing project'),
@@ -105,5 +114,6 @@ FUNCTION_LIST = {
     '!skills': (scrape_db, 'learn what others are good at    --e.g. !skills daruso'),
     '!github': (scrape_db, "check out other people's work    --e.g. !github daruso"),
     '!admin': (admin, 'will list and tag the admins    --works only in #general, no direct msg'),
-    '!suggest': (suggest, 'what you want to see implemented    --e.g. !suggest revive giphy bot')
+    '!suggest': (suggest, 'what you want to see implemented    --e.g. !suggest revive giphy bot'),
+    '!resources': (resources, 'provide some useful links    --works only in #haskell')
 }
