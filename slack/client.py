@@ -9,7 +9,6 @@ import websockets
 from requests import models
 
 from static import consts
-from database import log
 from slack import dispatcher
 
 
@@ -45,7 +44,9 @@ def process_http_status(response):
 
 
 class SlackClient(object):
-    def __init__(self, token):
+    def __init__(self, token, logger):
+        self.logger = logger
+
         self.token = token
 
         self.websock = None
@@ -59,17 +60,17 @@ class SlackClient(object):
         self.USERS = {}
 
     @staticmethod
-    def post_msg(username: str, text: str, channel: str = consts.CH_IRC_CHAT):
+    def post_msg(username, text, channel=consts.CH_IRC_CHAT):
         requests.get("https://slack.com/api/chat.postMessage", params={'token': consts.SLACK_TOKEN,
                                                                        'channel': channel,
                                                                        'username': username,
                                                                        'text': text
                                                                        })
 
-    def remove_from_pending_msgs(self, int_id: str):
+    def remove_from_pending_msgs(self, int_id):
         self.PENDING_MSGS.pop(int_id, None)
 
-    async def append_to_pending_msgs(self, body: dict, int_id: str):
+    async def append_to_pending_msgs(self, body, int_id):
         self.PENDING_MSGS[int_id] = body
         await asyncio.sleep(5)
 
@@ -87,19 +88,21 @@ class SlackClient(object):
             if self.websock.open:
                 await self.websock.send(json.dumps({'type': 'ping', 'id': str(uuid.uuid4())}))
             else:
-                log.log('{} -- {}'.format(self.websock.close_code, self.websock.close_reason), 'client.ping')
+                self.logger.debug('{} -- {}'.format(self.websock.close_code, self.websock.close_reason))
                 return "WS is {}".format(self.websock.state_name)
 
             if (time.time() - self.last_msg_arrived) > 150:
+                self.logger.debug('closing RTM WS...')
                 await self.websock.close()
                 return "Last msg arrived 150+ secs ago"
 
-    async def send_msg(self, body: dict, int_id: str='1'):
+    async def send_msg(self, body, int_id='1'):
         body['id'] = int_id
         body['type'] = 'message'
         body['token'] = self.token
 
         if body.get('as_user') == 'true':
+            self.logger.debug('<<< OUTGOING post <<<: {}'.format(body))
             reply = urlencode(body)
             requests.get("https://slack.com/api/chat.postMessage?" + reply)
             return
@@ -111,22 +114,23 @@ class SlackClient(object):
         if delay > 0:
             await asyncio.sleep(delay)
 
+        self.logger.debug('<<< OUTGOING post <<<: {}'.format(body))
         await self.websock.send(reply)
         self.last_msg_sent = time.time()
 
-    def api_call(self, method: str, params: dict =None):
+    def api_call(self, method, params=None):
         if params is not None:
             params['token'] = self.token
         else:
             params = {'token': self.token}
         uri = 'https://slack.com/api/{}'.format(method)
-
+        self.logger.debug('POST: {}'.format(uri))
         resp = requests.post(uri, data=params)
         try:
             process_http_status(resp)
             return json.loads(resp.text)
         except HttpException as e:
-            log.log(str(e), 'slack.client.api_call + {}'.format(method))
+            self.logger.error(e)
             return {}
 
     def connect_to_rtm(self):
@@ -137,7 +141,7 @@ class SlackClient(object):
             self.USERS = {user.get('id'): user.get('name') for user in client_info['users']}
             return client_info['url']
         else:
-            log.log("Couldn't connect to Slack's RTM API, will try again in 3 secs", 'connect_to_rtm')
+            self.logger.warning("Couldn't connect to Slack's RTM API, will try again in 3 secs")
             time.sleep(3)
             return self.connect_to_rtm()
 
@@ -146,11 +150,12 @@ class SlackClient(object):
         while 1:
             msg = await self.websock.recv()
             if msg is None:
-                log.log('slack closed the connection', 'client.rtm_listen')
+                self.logger.warning('0 byte received via RTM WS')
                 return 'None received'
             self.last_msg_arrived = time.time()
 
             msg = json.loads(msg)
+            self.logger.debug('>>> INCOMING MSG >>>: {}'.format(msg))
 
             if 'reply_to' in msg:
                 if msg.get('ok'):
@@ -158,6 +163,7 @@ class SlackClient(object):
                 continue
 
             if msg.get('user') == 'USLACKBOT' or msg.get('subtype') == 'bot_message':
+                self.logger.debug('Trashed: {}'.format(msg))
                 continue
 
             if msg.get('type') == 'message' and len(msg) == 6:
@@ -167,6 +173,7 @@ class SlackClient(object):
                     text = msg.get('text', '')
                 internal_id = str(uuid.uuid4())
 
+                self.logger.debug('FWDed to dispatcher: {}'.format(msg))
                 await self.worker_msg_queue.put(
                     (text,
                      msg.get('user', ''),
@@ -174,8 +181,9 @@ class SlackClient(object):
                      internal_id)
                 )
             elif msg.get('type') == 'hello':
-                log.log('RTM session started', '')
+                self.logger.debug('RTM session started')
             elif msg.get('type') == 'reconnect_url':
+                self.logger.debug('RECONNECTION URI: {}'.format(msg.get('url')))
                 self.reconn_uri = msg.get('url')
 
     async def start_workers(self, uri, queue):
@@ -189,3 +197,12 @@ class SlackClient(object):
             self.rtm_listen()
         )
         return await self.ping()
+
+
+def set_logger():
+    import logging
+    log_level = {'debug': logging.DEBUG,
+                 'info': logging.INFO,
+                 'error': logging.ERROR}
+    logging.basicConfig(filename=consts.LOG_FILE, level=log_level[consts.LOG_LEVEL])
+    return logging.getLogger(__name__)
