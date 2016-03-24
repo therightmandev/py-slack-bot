@@ -25,3 +25,7 @@ CH_WEB = 'C0H0MG11S'
 CH_JAVA = 'C0H0MFZUL'
 CH_CPP = 'C0H0SR4CS'
 CH_GAMEDEV = 'C0H0MG19A'
+CH_HASKELL = 'C0SMCMJ0H'
+
+LOG_FILE = 'database/log.out'
+LOG_LEVEL = 'debug'  # 'debug' | 'info' | 'error'

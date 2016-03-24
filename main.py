@@ -69,7 +69,7 @@ def start_processes():
     p2 = multiprocessing.Process(target=irc, args=(queue, ))
     p3 = multiprocessing.Process(target=site_, args=())
 
-    proc = (p1, p3)
+    proc = (p1, p2, p3)
     for p in proc:
         p.start()
         logger.info('Process started: {}\tPID: {}'.format(p, p.pid))
