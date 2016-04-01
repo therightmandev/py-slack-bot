@@ -2,6 +2,9 @@ IRC_SERVER = 'irc.freenode.net'
 IRC_CHANNEL = '#learnprogramming'
 IRC_NAME = 'ForwardMsgsFromSlack'
 
+DATABASE_URI = ''
+SESSION_ID = ''
+
 SLACK_TOKEN = ''
 
 MEMBERSHEET_ID = '1-a3chlfbrRmJYYbMvHZBasw5uSCKK9r_7Ely2CvorYk'

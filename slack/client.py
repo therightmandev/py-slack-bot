@@ -10,6 +10,7 @@ from requests import models
 
 from static import consts
 from slack import dispatcher
+from database.db_sync import DatabaseWrapper
 
 
 class HttpException(Exception):
@@ -182,8 +183,13 @@ class SlackClient(object):
                 )
             elif msg.get('type') == 'team_join':
                 user = msg['user']
+                email = user['profile']['email']
                 await dispatcher.greet_new_user(u_id=user['id'], u_name=user['name'], slack_client=self,
                                                 int_id=str(uuid.uuid4()))
+                req = asyncio.get_event_loop().run_in_executor(None, DatabaseWrapper.sync_new_user,
+                                                               *(user['id'], user['name'], email))
+                await req
+
             elif msg.get('type') == 'hello':
                 self.logger.debug('RTM session started')
             elif msg.get('type') == 'reconnect_url':
