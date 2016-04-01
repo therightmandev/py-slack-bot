@@ -4,11 +4,12 @@ from tinydb import TinyDB, Query
 
 from static import consts
 
+db = TinyDB('database/membersheet.json')
+
 
 def scrape(name, col_name):
     col_name = col_name.lower()
 
-    db = TinyDB('database/membersheet.json')
     found_user = db.search(Query().name == name)
 
     if len(found_user) != 1:
@@ -22,6 +23,17 @@ def scrape(name, col_name):
     elif col_name == '!time':
         return '{:%H:%M:%S}'.format(datetime.now() + timedelta(hours=int(answer)))
     return answer
+
+
+def update(uname, uid, col_name, col_value):
+    import requests
+    db.update({col_name: col_value}, Query().name == uname)
+    try:
+        requests.put(consts.DATABASE_URI, cookies={'session': consts.SESSION_ID},
+                     params={col_name: col_value, 'slack_id': uid})
+    except Exception:
+        # TODO
+        return None
 
 
 # --------- New member -----------
@@ -67,11 +79,6 @@ def new_project(ch: str, **_) -> dict:
             'channel': ch}
 
 
-def membersheet(ch: str, **_) -> dict:
-    return {'text': 'Our member spreadsheet: {}. Please upload your info! Thanks!'.format('http://bit.ly/1R5tvN3'),
-            'channel': ch}
-
-
 def scrape_db(ch: str, msg: str, sender_id: str, slack_client, **_) -> dict:
     msg = msg.split(' ')
     if len(msg) == 1:
@@ -83,6 +90,14 @@ def scrape_db(ch: str, msg: str, sender_id: str, slack_client, **_) -> dict:
                'Correct usage is: "!method" + "username". e.g: "!time daruso"'
 
     return {'text': text, 'channel': ch}
+
+
+def update_db(ch: str, msg: str, sender_id: str, slack_client, **_):
+    msg = msg.split(' ')
+    if len(msg) != 3 or msg[1] not in ('time', 'skills', 'github'):
+        return {'text': 'Seems like your message is not formatted correctly.', 'channel': ch}
+    sender_name = slack_client.USERS.get(sender_id, '')
+    update(uname=sender_name, uid=sender_id, col_name='!' + msg[1], col_value=msg[2])
 
 
 def admin(ch: str, **_) -> dict:
@@ -109,10 +124,10 @@ FUNCTION_LIST = {
     '!help': (help_, ''),
     '!projectlist': (project_list, 'if you want to join an existing project'),
     '!newproject': (new_project, 'if you want to create your own project!'),
-    '!membersheet': (membersheet, 'please keep your info up-to-date'),
-    '!time': (scrape_db, 'this one has no practical use...    --e.g. !time daruso'),
+    '!time': (scrape_db, 'get the current time of somebody    --e.g. !time daruso'),
     '!skills': (scrape_db, 'learn what others are good at    --e.g. !skills daruso'),
     '!github': (scrape_db, "check out other people's work    --e.g. !github daruso"),
+    '!update': (update_db, 'update your time/github/skills info    --e.g. !update time +1'),
     '!admin': (admin, 'will list and tag the admins    --works only in #general, no direct msg'),
     '!suggest': (suggest, 'what you want to see implemented    --e.g. !suggest revive giphy bot'),
     '!resources': (resources, 'provide some useful links    --works only in #haskell')

@@ -23,17 +23,19 @@ class DatabaseWrapper:
             resp = req.json()
             user = resp['response']['value']
             if user is not None:
+                for col in ('time', 'github', 'skills'):
+                    user['!' + col] = user.pop(col)
                 cls.db.insert(user)
             else:
                 cls.logger.error('DATABASE -- USER NOT FOUND:\n{} ({} - {})'.format(email, uid, uname))
                 cls.db.insert(
-                    {"skills": '', "github": '', "time": '', "email": email, "username": uname,
+                    {"!skills": '', "!github": '', "!time": '', "email": email, "username": uname,
                      'slack_id': uid, "points": '0'}
                 )
         else:
             cls.logger.error('DATABASE -- SOMETHING WENT WRONG: {}\n{} ({} - {})'
                              .format(req.status_code, email, uid, uname))
             cls.db.insert(
-                {"skills": '', "github": '', "time": '', "email": email, "username": uname,
+                {"!skills": '', "!github": '', "!time": '', "email": email, "username": uname,
                  'slack_id': uid, "points": '0'}
             )
