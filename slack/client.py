@@ -138,7 +138,7 @@ class SlackClient(object):
         client_info = self.api_call("rtm.start", args)
 
         if client_info.get('ok'):
-            self.USERS = {user.get('id'): user.get('name') for user in client_info['users']}
+            self.USERS = {user.get('id'): user.get('name') for user in client_info.get('users', [])}
             return client_info['url']
         else:
             self.logger.warning("Couldn't connect to Slack's RTM API, will try again in 3 secs")
@@ -180,6 +180,10 @@ class SlackClient(object):
                      msg.get('channel', ''),
                      internal_id)
                 )
+            elif msg.get('type') == 'team_join':
+                user = msg['user']
+                await dispatcher.greet_new_user(u_id=user['id'], u_name=user['name'], slack_client=self,
+                                                int_id=str(uuid.uuid4()))
             elif msg.get('type') == 'hello':
                 self.logger.debug('RTM session started')
             elif msg.get('type') == 'reconnect_url':

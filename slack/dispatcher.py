@@ -40,7 +40,6 @@ async def disp_msg(inc_queue, slack_client, queue):
     logger = set_logger()
 
     pattern = r'has (left|joined) the channel'
-    join_pattern = r'<@(\w{9})\|(\w+)> has joined the channel'
 
     irc_socket, irc_channel = None, ''
 
@@ -73,15 +72,11 @@ async def disp_msg(inc_queue, slack_client, queue):
                 logger.debug('>>> OUTGOING IRC MSG >>>: {}'.format(formatted_msg))
                 irc_socket.send('PRIVMSG {} :{}\r\n'.format(irc_channel, formatted_msg).encode('utf8'))
 
-        elif ch == consts.CH_GENERAL:
-            # TODO: rewrite
-            newcommer = re.search(join_pattern, msg)
 
-            if newcommer is not None and newcommer.group(1) not in slack_client.USERS:
-                # append userlist with the new guy ('id': 'name')
-                slack_client.USERS[newcommer.group(1)] = newcommer.group(2)
+async def greet_new_user(u_id, u_name, slack_client, int_id):
+    slack_client.USERS[u_id] = u_name
 
-                body = functions.greet_new_user(newcommer.group(1), newcommer.group(2), slack_client)
-                await slack_client.send_msg(body, int_id)
-                body2 = functions.notify_mods(newcommer.group(2))
-                await slack_client.send_msg(body2)
+    body = functions.greet_new_user(u_id, u_name, slack_client)
+    await slack_client.send_msg(body, int_id)
+    body2 = functions.notify_mods(u_name)
+    await slack_client.send_msg(body2)
