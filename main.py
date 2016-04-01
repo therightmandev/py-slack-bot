@@ -8,7 +8,6 @@ import requests
 from IRC import irc_bot
 from slack import client
 from static import consts
-from website import site
 
 
 def slack(queue):
@@ -43,10 +42,6 @@ def irc(queue):
         irc_logger.info('trying to reconnect')
 
 
-def site_():
-    site.main()
-
-
 def is_network_down():
     url = 'http://google.com'
     resp = process_get_request(url)
@@ -67,9 +62,8 @@ def start_processes():
 
     p1 = multiprocessing.Process(target=slack, args=(queue, ))
     p2 = multiprocessing.Process(target=irc, args=(queue, ))
-    p3 = multiprocessing.Process(target=site_, args=())
 
-    proc = (p1, p2, p3)
+    proc = (p1, p2)
     for p in proc:
         p.start()
         logger.info('Process started: {}\tPID: {}'.format(p, p.pid))

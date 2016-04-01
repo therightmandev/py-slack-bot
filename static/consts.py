@@ -7,8 +7,6 @@ SESSION_ID = ''
 
 SLACK_TOKEN = ''
 
-MEMBERSHEET_ID = '1-a3chlfbrRmJYYbMvHZBasw5uSCKK9r_7Ely2CvorYk'
-
 # delay between outgoing messages in seconds
 SLACK_MSG_DELAY = 1
 
