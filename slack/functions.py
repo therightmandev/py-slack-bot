@@ -51,8 +51,6 @@ def greet_new_user(userid: str, username: str, slack_client) -> dict:
                  "community.\n" \
                  "<#{}> is used for general programming related discussion. If you have a language-specific " \
                  "question/topic please use the language's channel (if it exists).\n " \
-                 "Also I'd like to ask you to type '!membersheet' (without quotes) in the chat, and fill the sheet " \
-                 "I'll link you. The '!help' command is also available to find out more about my functions.\n" \
                  "Enjoy your stay! :simple_smile:" \
         .format(username, consts.CH_ANNOUNCEMENTS, consts.CH_ADMIN_HELP, consts.CH_PROGRAMMING)
     return {'channel': dm_ch, 'text': greet_text}
