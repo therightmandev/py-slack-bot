@@ -17,8 +17,9 @@ class DatabaseWrapper:
 
     @classmethod
     def sync_new_user(cls, uid, uname, email):
+        # {'cheat': 'first_signin'} is a magic value that MUST NOT be used elsewhere
         req = requests.put(consts.DATABASE_URI, cookies={'session': consts.SESSION_ID},
-                           params={'email': email, 'username': uname, 'slack_id': uid})
+                           params={'email': email, 'username': uname, 'slack_id': uid, 'cheat': 'first_signin'})
         if req.status_code == 200:
             resp = req.json()
             user = resp['response']['value']
