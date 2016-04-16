@@ -6,15 +6,15 @@ from urllib.parse import urlencode
 
 import requests
 import websockets
-from requests import models
 
 from static import consts
 from slack import dispatcher
-from database.db_sync import DatabaseWrapper
+from database import db_sync
 
 
 class HttpException(Exception):
     """ custom exception class for failed HTTP requests """
+
     def __init__(self, error: str, resp: requests.models.Response =None):
         self.error = error
         if resp is not None:
@@ -186,7 +186,7 @@ class SlackClient(object):
                 email = user['profile']['email']
                 await dispatcher.greet_new_user(u_id=user['id'], u_name=user['name'], slack_client=self,
                                                 int_id=str(uuid.uuid4()))
-                req = asyncio.get_event_loop().run_in_executor(None, DatabaseWrapper.sync_new_user,
+                req = asyncio.get_event_loop().run_in_executor(None, db_sync.sync_new_user,
                                                                *(user['id'], user['name'], email))
                 await req
 

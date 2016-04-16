@@ -1,3 +1,5 @@
+import asyncio
+import functools
 from datetime import datetime, timedelta
 
 from tinydb import TinyDB, Query
@@ -25,15 +27,24 @@ def scrape(name, col_name):
     return answer
 
 
-def update(uname, uid, col_name, col_value):
+async def update(uname, uid, col_name, col_value):
     import requests
+    loop = asyncio.get_event_loop()
+
     db.update({col_name: col_value}, Query().name == uname)
     try:
-        requests.put(consts.DATABASE_URI, cookies={'session': consts.SESSION_ID},
-                     params={col_name: col_value, 'slack_id': uid})
+        future = loop.run_in_executor(None, functools.partial(requests.put,
+                                                              consts.DATABASE_URI,
+                                                              cookies={'session': consts.SESSION_ID},
+                                                              params={col_name: col_value, 'slack_id': uid},
+                                                              timeout=5))
+        resp = await future
     except Exception:
         # TODO
+        print('FAILED: {} {}  {} {}'.format(uname, uid, col_name, col_value))
         return None
+    print(resp.text)
+    return None
 
 
 # --------- New member -----------
@@ -95,7 +106,10 @@ def update_db(ch: str, msg: str, sender_id: str, slack_client, **_):
     if len(msg) != 3 or msg[1] not in ('time', 'skills', 'github'):
         return {'text': 'Seems like your message is not formatted correctly.', 'channel': ch}
     sender_name = slack_client.USERS.get(sender_id, '')
-    update(uname=sender_name, uid=sender_id, col_name='!' + msg[1], col_value=msg[2])
+
+    asyncio.get_event_loop().run_until_complete(
+        update(uname=sender_name, uid=sender_id, col_name='!' + msg[1], col_value=msg[2])
+    )
 
 
 def admin(ch: str, **_) -> dict:
