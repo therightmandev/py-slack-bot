@@ -114,7 +114,7 @@ def update_db(ch: str, msg: str, sender_id: str, slack_client, **_):
 
 def admin(ch: str, **_) -> dict:
     if ch == consts.CH_GENERAL:
-        return {'text': '<@joesv> <@micheal> <@daruso> <@therightman>',
+        return {'text': '<@himrin> <@vaggelisd> <@daruso> <@therightman>',
                 'channel': ch}
     else:
         return {'text': '', 'channel': ch}

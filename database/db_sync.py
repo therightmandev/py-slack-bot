@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def sync_new_user(uid, uname, email):
     # {'cheat': 'first_signin'} is a magic value that MUST NOT be used elsewhere
-    req = requests.put(consts.DATABASE_URI, cookies={'session': consts.SESSION_ID},
+    req = requests.put(consts.DATABASE_URI, timeout=5, cookies={'session': consts.SESSION_ID},
                        params={'email': email, 'username': uname, 'slack_id': uid, 'cheat': 'first_signin'})
     if req.status_code == 200:
         resp = req.json()
