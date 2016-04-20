@@ -3,6 +3,8 @@ import functools
 from datetime import datetime, timedelta
 
 from tinydb import TinyDB, Query
+import requests
+import requests.exceptions
 
 from static import consts
 
@@ -28,23 +30,30 @@ def scrape(name, col_name):
 
 
 async def update(uname, uid, col_name, col_value):
-    import requests
-    loop = asyncio.get_event_loop()
+    col_value = ' '.join(col_value)
+    if col_name == '!time':
+        try:
+            col_value = int(col_value)
+        except ValueError:
+            return 'Time expects an int parameter'
 
-    db.update({col_name: col_value}, Query().name == uname)
+    loop = asyncio.get_event_loop()
+    fut = loop.run_in_executor(None, db.update, {col_name: col_value}, Query().name == uname)
+    await fut
+
     try:
-        future = loop.run_in_executor(None, functools.partial(requests.put,
-                                                              consts.DATABASE_URI,
-                                                              cookies={'session': consts.SESSION_ID},
-                                                              params={col_name: col_value, 'slack_id': uid},
-                                                              timeout=5))
+        future = loop.run_in_executor(
+            None, functools.partial(requests.put, consts.DATABASE_URI, cookies={'session': consts.SESSION_ID},
+                                    params={col_name: col_value, 'slack_id': uid}, timeout=5)
+        )
         resp = await future
-    except Exception:
-        # TODO
-        print('FAILED: {} {}  {} {}'.format(uname, uid, col_name, col_value))
-        return None
-    print(resp.text)
-    return None
+    except requests.exceptions.RequestException:
+        print('FAILED1: {} {}  {} {}'.format(uname, uid, col_name, col_value))
+    else:
+        if resp.status_code != 200:
+            print('FAILED2: {} {}  {} {}'.format(uname, uid, col_name, col_value))
+
+    return 'Updated {} with value(s): {}'.format(col_name[1:], col_value)
 
 
 # --------- New member -----------
@@ -101,15 +110,15 @@ def scrape_db(ch: str, msg: str, sender_id: str, slack_client, **_) -> dict:
     return {'text': text, 'channel': ch}
 
 
-def update_db(ch: str, msg: str, sender_id: str, slack_client, **_):
+async def update_db(ch: str, msg: str, sender_id: str, slack_client, **_):
     msg = msg.split(' ')
-    if len(msg) != 3 or msg[1] not in ('time', 'skills', 'github'):
+    if len(msg) < 3 or msg[1] not in ('time', 'skills', 'github'):
         return {'text': 'Seems like your message is not formatted correctly.', 'channel': ch}
     sender_name = slack_client.USERS.get(sender_id, '')
 
-    asyncio.get_event_loop().run_until_complete(
-        update(uname=sender_name, uid=sender_id, col_name='!' + msg[1], col_value=msg[2])
-    )
+    resp = await update(uname=sender_name, uid=sender_id, col_name='!' + msg[1], col_value=msg[2:])
+
+    return {'text': resp, 'channel': ch}
 
 
 def admin(ch: str, **_) -> dict:

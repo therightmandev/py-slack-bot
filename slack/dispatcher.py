@@ -53,10 +53,18 @@ async def disp_msg(inc_queue, slack_client, queue):
 
         if func is not None:
             logger.debug('FUNCTION MATCHED: {}'.format(func))
-            body = func[0](**{'ch': ch,
-                              'msg': msg,
-                              'sender_id': userid,
-                              'slack_client': slack_client})
+
+            if first_word == '!update':
+                body = await func[0](**{'ch': ch,
+                                        'msg': msg,
+                                        'sender_id': userid,
+                                        'slack_client': slack_client})
+            else:
+                body = func[0](**{'ch': ch,
+                                  'msg': msg,
+                                  'sender_id': userid,
+                                  'slack_client': slack_client})
+
             if body == '':
                 continue
             else:
