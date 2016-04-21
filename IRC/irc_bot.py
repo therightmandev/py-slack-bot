@@ -50,7 +50,7 @@ class IrcBot:
 
                 client.SlackClient.post_msg(username=match.group(1), text=text)
 
-            elif msg.startswith("PING :") != -1:
+            elif msg.startswith("PING :"):
                 self.pong(msg.split()[1])
 
     def login(self):
